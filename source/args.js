@@ -33,7 +33,7 @@ const allArgs = {
     '--fileType': new Arg(['-t'], String, `the file type to use as music`, defaultType, `extension`),
     '--author': new Arg([], String, `your name to add as the author of the mods`, 'Anonymous', `name`),
     '--contact': new Arg([], String, `your contact info for inclusion in the mods`, 'N/A', `email`),
-    '--clear': new Arg([], Boolean, `ALL DESTINATION FOLDER CONTENTS WILL BE DELETED. NO CONFIRMATION.`),
+    '--clear': new Arg([], Boolean, `ALL DESTINATION FOLDER CONTENTS WILL BE DELETED. NO CONFIRMATION.`, false),
 }
 const allArgKeys = Object.keys(allArgs)
 

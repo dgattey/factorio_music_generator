@@ -8,6 +8,7 @@
   "license": "Apache 2.0",
   "private": true,
   "dependencies": {
+    "adm-zip": "^0.5.3",
     "arg": "^5.0.0",
     "canvas": "^2.6.1",
     "cli-progress": "^3.9.0",
