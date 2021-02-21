@@ -1,15 +1,11 @@
 const arg = require('arg')
-
-// Usage text, for use with help text
-const pathOfApp = process.argv.slice(1)[0].split('/')
-const usageText = `Usage: ${process.argv0} ${pathOfApp[pathOfApp.length - 1]} [options] [flags]
-
-Options:`
+const { logError, logHelpMessage } = require('./log.js')
 
 const defaultChunkSize = 20
 const defaultModVersion = '1.0.0'
 const defaultSource = './music'
 const defaultDest = './generatedMods'
+const defaultType = 'ogg'
 
 // Creates an argument from a string flag value, the type of flag, any aliases for it, and a description
 class Arg {
@@ -34,6 +30,10 @@ const allArgs = {
     '--chunkSize': new Arg(['--size', '-c'], Number, `the number of audio files to include in one mod`, defaultChunkSize, `value`),
     '--source': new Arg(['-s'], String, `the location of the source files`, defaultSource, `folder`),
     '--destination': new Arg(['-d'], String, `the location of the destination mods`, defaultDest, `folder`),
+    '--fileType': new Arg(['-t'], String, `the file type to use as music`, defaultType, `extension`),
+    '--author': new Arg([], String, `your name to add as the author of the mods`, 'Anonymous', `name`),
+    '--contact': new Arg([], String, `your contact info for inclusion in the mods`, 'N/A', `email`),
+    '--clear': new Arg([], Boolean, `ALL DESTINATION FOLDER CONTENTS WILL BE DELETED. NO CONFIRMATION.`),
 }
 const allArgKeys = Object.keys(allArgs)
 
@@ -43,40 +43,26 @@ const simplifiedArgs = (parsedArgs) => {
     const simplifiedArgs = Object.keys(allArgs)
         .filter((key) => allArgs[key].defaultValue)
         .reduce((defaultArgs, key) => ({ ...defaultArgs, [unflagged(key)]: allArgs[key].defaultValue }), {})
+
+    // Ensure we have all required args
     const requiredArgs = Object.keys(allArgs).filter((key) => allArgs[key].isRequired)
     for (index in requiredArgs) {
-        const parsedValue = parsedArgs[requiredArgs[index]]
-        if (parsedValue === undefined) {
+        if (parsedArgs[requiredArgs[index]] === undefined) {
             throw new arg.ArgError(`required argument ${requiredArgs[index]} is missing`)
         }
-        simplifiedArgs[unflagged(requiredArgs[index])] = parsedValue
     }
-    
+
+    // Add all parsed args
+    for (parsedArg in parsedArgs) {
+        if (allArgs[parsedArg]) {
+            simplifiedArgs[unflagged(parsedArg)] = parsedArgs[parsedArg]
+        }
+    }
     return simplifiedArgs
 }
-
-// Prints an error message in red
-const logError = (message) => {
-    console.log(`\n\x1b[41mError: ${message}\x1b[0m`)
-}
-
-// Prints a help message from the args
-const logHelpMessage = () => {
-    const messages = allArgKeys.reduce((messages, key) => {
-        const argData = allArgs[key]
-        let message = argData.placeholderName ? `${key} <${argData.placeholderName}>` : key
-        message = argData.aliases.length > 0 ? [message, ...argData.aliases].join(', ') : message
-        return [...messages, message]
-    }, [])
-    const maxLength = messages.reduce((maxValue, message) => Math.max(maxValue, message.length), 0)
-    const paddedMessages = messages.map((message, index) => 
-        `    ${message.padEnd(maxLength + 4, ' ')}\t${allArgs[allArgKeys[index]].description}`
-    )
-    console.log(`\n${usageText}\n\n${paddedMessages.join('\n')}\n`)
-}
-
+// TODO: move to top level so I can avoid passing args to log help message
 // Parses the args from command line, returning success
-const generateValues = () => {
+const parseCommandLineArgs = () => {
     // Transform args to flags as the arg library expects (aliases and args with types)
     const flagsWithTypes = allArgKeys.reduce((obj, key) => {
         const argData = allArgs[key]
@@ -89,18 +75,19 @@ const generateValues = () => {
     try {
         const parsedArgs = arg(flagsWithTypes)
         if (parsedArgs['--help']) {
-            logHelpMessage()
+            logHelpMessage(allArgs)
             return
         }
         return simplifiedArgs(parsedArgs)
     } catch (error) {
         logError(error.message)
-        logHelpMessage()
+        logHelpMessage(allArgs)
         return
     }
 }
 
 // Export the function that generates values
 module.exports = {
-    generateValues,
+    parseCommandLineArgs,
+    allArgs,
 }

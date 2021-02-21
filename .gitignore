@@ -103,5 +103,6 @@ dist
 # TernJS port file
 .tern-port
 
-# Don't check in the music files
+# Don't check in the default folders
 music
+generatedMods
