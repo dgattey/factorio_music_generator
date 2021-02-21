@@ -2,12 +2,13 @@ const fs   = require('fs')
 const path = require('path')
 const { createCanvas } = require('canvas')
 const json2lua = require('json2lua')
+const Zip = require('adm-zip')
 
 const { logError, logHelpMessage } = require('./log.js')
 const { allArgs } = require('./args.js')
 
-// Represents constant overhead work per mod (one for info.json, thumbnail.png, folder itself)
-const overheadWork = 3
+// Represents constant overhead work per mod (one for info.json, thumbnail.png, folder itself, delete of the mod folder). Zip is counted separately!
+const overheadWork = 4
 
 const startFile = (data, modIndex) => (modIndex - 1) * data.chunkSize + 1
 const endFile = (data, modIndex) => Math.min(modIndex * data.chunkSize, data.sourceFilesCount)
@@ -102,14 +103,19 @@ const saveInfoJson = async (data, humanName, modFolderName, modIndex) => {
 
 // Generates a list of all tracks to be saved to the base mod's data.lua
 const saveBaseLuaData = async (data, destinationMusicFiles) => {
-    const allTracks =  destinationMusicFiles.map((destinationFile, index) => ({
-        type: 'ambient-sound',
-        name: `${data.modFolderName}-${index}`,
-        track_type: 'main-track',
-        sound: {
-            filename: `__${data.modFolderName}__/${path.relative(data.destination, destinationFile)}`
+    const allTracks =  destinationMusicFiles.map((destinationFile, index) => {
+        const modIndex = Math.ceil((index + 1) / data.chunkSize)
+        const filename = path.basename(destinationFile)
+        const filepath = `__${data.modFolderName}_${modIndex}__/${filename}`
+        return {
+            type: 'ambient-sound',
+            name: `${data.modFolderName}-${filename}`,
+            track_type: 'main-track',
+            sound: {
+                filename: filepath,
+            }
         }
-    }))
+    })
 
     // Write to file, making sure to add Factorio's `data:extend` directive + taking out extra chars
     const rawLuaCode = json2lua.fromString(JSON.stringify(allTracks))
@@ -123,7 +129,7 @@ const copyMusicFiles = async (data, modFolderName, modIndex, musicFiles) => {
     for (let index = startFile(data, modIndex) - 1; index < endFile(data, modIndex); index++) {
         const filename = path.basename(musicFiles[index])
         await fs.promises.copyFile(musicFiles[index], `${data.destination}/${modFolderName}/${filename}`)
-        data.progress.increment()
+        data.progress.increment(2)
     }
 }
 
@@ -150,6 +156,23 @@ const generateMod = async (data, musicFiles, modIndex = -1) => {
     }
 }
 
+// Zips each mod folder, then deletes the mod folder. Called as a second pass. Factorio expects the modVersion to be appended
+const zipMods = async (data, zipWork) => {
+    const files = await fs.promises.readdir(data.destination, { withFileTypes: true })
+    for (const file of files) {
+        if (!file.isDirectory()) {
+            continue
+        }
+        const folderPath = path.resolve(data.destination, file.name)
+        const zip = new Zip()
+        zip.addLocalFolder(folderPath, file.name)
+        await fs.promises.writeFile(`${data.destination}/${file.name}_${data.modVersion}.zip`, zip.toBuffer())
+        data.progress.increment(zipWork)
+        await fs.promises.rmdir(folderPath, { recursive: true })
+        data.progress.increment()
+    }
+}
+
 // Counts the number of files that are of ogg type in current directory, then generates mods in groups of 20
 const generateAllMods = async (data, progressBar) => {
     const sourceFiles = await getSourceFiles(data)
@@ -167,8 +190,9 @@ const generateAllMods = async (data, progressBar) => {
 
     console.log(`Generating ${modCount} mods from ${sourceFilesCount} source files...`)
 
-    // Work is per mod + each source file + data.lua in base mod + creation of dest folder
-    const totalWork = overheadWork * (modCount + 1) + sourceFilesCount + 2
+    // Work is per mod + each source file + data.lua in base mod + creation of dest folder. Plus an extra  for the zipping!
+    const zipWork = data.chunkSize * 10
+    const totalWork = (overheadWork + zipWork) * (modCount + 1) + (sourceFilesCount * 2) + 2
 
     // Show a fancy progress bar
     data.progress = progressBar
@@ -187,6 +211,9 @@ const generateAllMods = async (data, progressBar) => {
     // Create base mod once we've added all the music files
     const destMusicFiles = await getDestFiles(data)
     await generateMod(data, destMusicFiles)
+
+    // Finally, do another pass around to zip the folders and delete the files
+    await zipMods(data, zipWork)
 }
 
 module.exports = {
