@@ -1,8 +1,4 @@
 const arg = require('arg')
-const fs = require('fs')
-
-// Grab version from package.json
-const appVersion = require('../package.json').version
 
 // Usage text, for use with help text
 const pathOfApp = process.argv.slice(1)[0].split('/')
@@ -80,7 +76,7 @@ const logHelpMessage = () => {
 }
 
 // Parses the args from command line, returning success
-const values = () => {
+const generateValues = () => {
     // Transform args to flags as the arg library expects (aliases and args with types)
     const flagsWithTypes = allArgKeys.reduce((obj, key) => {
         const argData = allArgs[key]
@@ -104,8 +100,7 @@ const values = () => {
     }
 }
 
-// Export the version + args
+// Export the function that generates values
 module.exports = {
-    appVersion,
-    values,
+    generateValues,
 }
