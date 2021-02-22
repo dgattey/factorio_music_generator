@@ -2,7 +2,6 @@ const fs   = require('fs')
 const path = require('path')
 const { createCanvas } = require('canvas')
 const json2lua = require('json2lua')
-const { zipMods } = require('./zip')
 
 const { logError, logHelpMessage, progressLogger } = require('./log.js')
 const { allArgs } = require('./args.js')
@@ -172,9 +171,6 @@ const generateAllMods = async (data) => {
     await progressLogger(Promise.all(Array(modCount).fill().map((_, index) => generateMod(data, sourceFiles, index + 1))), `Generate music pack mods`)
     const destMusicFiles = await getDestFiles(data)
     await progressLogger(generateMod(data, destMusicFiles), 'Generate base mod')
-
-    // Finally, do another pass around to zip the folders and delete the files
-    await zipMods(data)
 }
 
 module.exports = {

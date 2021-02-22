@@ -13,7 +13,7 @@ const zipMod = async (destination, modVersion, folderName) => {
     await fs.promises.rmdir(folderPath, { recursive: true })
 }
 
-// Zips each mod folder, then deletes the mod folder. Called as a second pass
+// Zips each mod folder, then deletes each mod folder. Called as a second pass
 const zipMods = async ({ destination, modVersion }) => {
     const possibleFolders = await fs.promises.readdir(destination, { withFileTypes: true })
     const promises = possibleFolders
