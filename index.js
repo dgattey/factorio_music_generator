@@ -23,3 +23,8 @@ try {
 } catch (error) {
     log.error(error.message)
 }
+
+// Setup handler for handling rejection errors
+process.on('unhandledRejection', (reason) => {
+    log.error(reason)
+})

@@ -76,7 +76,7 @@ const generateAllMods = async (data) => {
     const sourceFilesCount = sourceFiles.length
     const modCount = Math.ceil(sourceFilesCount / data.chunkSize)
     if (sourceFilesCount < 1) {
-        throw MediaError(`No source files found`)
+        throw TypeError(`No source files found`)
     }
     
     data.modCount = modCount
