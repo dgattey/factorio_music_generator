@@ -2,9 +2,7 @@ const fs   = require('fs')
 const path = require('path')
 const { createCanvas } = require('canvas')
 const json2lua = require('json2lua')
-
-const { logError, logHelpMessage, progressLogger } = require('./log.js')
-const { allArgs } = require('./args.js')
+const { progress } = require('./log')
 
 const startFile = (data, modIndex) => (modIndex - 1) * data.chunkSize + 1
 const endFile = (data, modIndex) => Math.min(modIndex * data.chunkSize, data.sourceFilesCount)
@@ -151,9 +149,7 @@ const generateAllMods = async (data) => {
     const sourceFilesCount = sourceFiles.length
     const modCount = Math.ceil(sourceFilesCount / data.chunkSize)
     if (sourceFilesCount < 1) {
-        logError('No source files found')
-        logHelpMessage(allArgs)
-        return
+        throw MediaError(`No source files found`)
     }
     console.log(`Generating ${modCount} mods from ${sourceFilesCount} source files...`)
     
@@ -163,14 +159,14 @@ const generateAllMods = async (data) => {
 
     // Clear/create destination folder
     if (data.clear) {
-        await progressLogger(fs.promises.rmdir(data.destination, { recursive: true }), 'Delete old output directory')
+        await progress(fs.promises.rmdir(data.destination, { recursive: true }), 'Delete old output directory')
     }
-    await progressLogger(fs.promises.mkdir(data.destination, { recursive: true }), 'Create output directory')
+    await progress(fs.promises.mkdir(data.destination, { recursive: true }), 'Create output directory')
 
     // Generate the mods, then grab their music files and create the base mod with them
-    await progressLogger(Promise.all(Array(modCount).fill().map((_, index) => generateMod(data, sourceFiles, index + 1))), `Generate music pack mods`)
+    await progress(Promise.all(Array(modCount).fill().map((_, index) => generateMod(data, sourceFiles, index + 1))), `Generate music pack mods`)
     const destMusicFiles = await getDestFiles(data)
-    await progressLogger(generateMod(data, destMusicFiles), 'Generate base mod')
+    await progress(generateMod(data, destMusicFiles), 'Generate base mod')
 }
 
 module.exports = {

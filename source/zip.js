@@ -1,7 +1,7 @@
 const fs   = require('fs')
 const path = require('path')
 const Zip = require('adm-zip')
-const { progressLogger } = require('./log')
+const { progress } = require('./log')
 
 // Async function that runs the zipping for a given folder. Factorio expects the modVersion to be appended
 const zipMod = async (destination, modVersion, folderName) => {
@@ -19,7 +19,7 @@ const zipMods = async ({ destination, modVersion }) => {
     const promises = possibleFolders
         .filter((folder) => folder.isDirectory())
         .map((folder) => zipMod(destination, modVersion, folder.name))
-    await progressLogger(Promise.all(promises), `Zip folders into mods`)
+    await progress(Promise.all(promises), `Zip folders into mods`)
 }
 
 module.exports = {
