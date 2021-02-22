@@ -2,13 +2,10 @@ const fs   = require('fs')
 const path = require('path')
 const { createCanvas } = require('canvas')
 const json2lua = require('json2lua')
-const Zip = require('adm-zip')
+const { zipMods } = require('./zip')
 
-const { logError, logHelpMessage } = require('./log.js')
+const { logError, logHelpMessage, progressLogger } = require('./log.js')
 const { allArgs } = require('./args.js')
-
-// Represents constant overhead work per mod (one for info.json, thumbnail.png, folder itself, delete of the mod folder). Zip is counted separately!
-const overheadWork = 4
 
 const startFile = (data, modIndex) => (modIndex - 1) * data.chunkSize + 1
 const endFile = (data, modIndex) => Math.min(modIndex * data.chunkSize, data.sourceFilesCount)
@@ -66,7 +63,6 @@ const saveThumbnail = async (data, text, modFolderName) => {
     // Write it out
     const buffer = canvas.toBuffer('image/png')
     await fs.promises.writeFile(`${data.destination}/${modFolderName}/thumbnail.png`, buffer)
-    data.progress.increment()
 }
 
 // Saves the info.json file to each mod folder
@@ -98,7 +94,6 @@ const saveInfoJson = async (data, humanName, modFolderName, modIndex) => {
     // Write it out
     const infoJson = JSON.stringify(info, null, 4)
     await fs.promises.writeFile(`${data.destination}/${modFolderName}/info.json`, infoJson)
-    data.progress.increment()
 }
 
 // Generates a list of all tracks to be saved to the base mod's data.lua
@@ -121,7 +116,6 @@ const saveBaseLuaData = async (data, destinationMusicFiles) => {
     const rawLuaCode = json2lua.fromString(JSON.stringify(allTracks))
     const fullFormattedCode = `data:extend(${rawLuaCode.replace(/\["/g, '').replace(/"\]/g, '')})`
     await fs.promises.writeFile(`${data.destination}/${data.modFolderName}/data.lua`, fullFormattedCode)
-    data.progress.increment()
 }
 
 // Copies music files from source to destination for a particular mod
@@ -129,7 +123,6 @@ const copyMusicFiles = async (data, modFolderName, modIndex, musicFiles) => {
     for (let index = startFile(data, modIndex) - 1; index < endFile(data, modIndex); index++) {
         const filename = path.basename(musicFiles[index])
         await fs.promises.copyFile(musicFiles[index], `${data.destination}/${modFolderName}/${filename}`)
-        data.progress.increment(2)
     }
 }
 
@@ -139,81 +132,49 @@ const generateMod = async (data, musicFiles, modIndex = -1) => {
     const modFolderName = isBaseMod ? data.modFolderName : `${data.modFolderName}_${modIndex}`
     const humanName = isBaseMod ? `${data.modName} (Base)` : `${data.modName} (Pack ${modIndex})`
 
-    // Create mod folder
-    await fs.promises.mkdir(`${data.destination}/${modFolderName}`, { recursive: true })
-    data.progress.increment()
-    
-    // Thumbnail + info JSON
+    // Create mod folder and thumb/info
+    const destinationLocation = `${data.destination}/${modFolderName}`
+    await fs.promises.mkdir(destinationLocation, { recursive: true })
     await saveThumbnail(data, humanName, modFolderName)
     await saveInfoJson(data, humanName, modFolderName, modIndex)
 
+    // Create data.lua or copy music (music files are DEST files for base mod, SOURCE for other mods)
     if (isBaseMod) {
-        // Create data.lua if base - the music files here are DESTINATION files
         await saveBaseLuaData(data, musicFiles)
     } else {
-        // Copy the right music to the folders - the music folders here are all the SOURCE files
         await copyMusicFiles(data, modFolderName, modIndex, musicFiles)
     }
 }
 
-// Zips each mod folder, then deletes the mod folder. Called as a second pass. Factorio expects the modVersion to be appended
-const zipMods = async (data, zipWork) => {
-    const files = await fs.promises.readdir(data.destination, { withFileTypes: true })
-    for (const file of files) {
-        if (!file.isDirectory()) {
-            continue
-        }
-        const folderPath = path.resolve(data.destination, file.name)
-        const zip = new Zip()
-        zip.addLocalFolder(folderPath, file.name)
-        await fs.promises.writeFile(`${data.destination}/${file.name}_${data.modVersion}.zip`, zip.toBuffer())
-        data.progress.increment(zipWork)
-        await fs.promises.rmdir(folderPath, { recursive: true })
-        data.progress.increment()
-    }
-}
-
 // Counts the number of files that are of ogg type in current directory, then generates mods in groups of 20
-const generateAllMods = async (data, progressBar) => {
+const generateAllMods = async (data) => {
     const sourceFiles = await getSourceFiles(data)
     const sourceFilesCount = sourceFiles.length
+    const modCount = Math.ceil(sourceFilesCount / data.chunkSize)
     if (sourceFilesCount < 1) {
         logError('No source files found')
         logHelpMessage(allArgs)
         return
     }
-    const modCount = Math.ceil(sourceFilesCount / data.chunkSize)
-
+    console.log(`Generating ${modCount} mods from ${sourceFilesCount} source files...`)
+    
     data.modCount = modCount
     data.sourceFilesCount = sourceFilesCount
     data.modFolderName = data.modName.replace(/[^A-Z0-9]/ig, '_')
 
-    console.log(`Generating ${modCount} mods from ${sourceFilesCount} source files...`)
-
-    // Work is per mod + each source file + data.lua in base mod + creation of dest folder. Plus an extra  for the zipping!
-    const zipWork = data.chunkSize * 10
-    const totalWork = (overheadWork + zipWork) * (modCount + 1) + (sourceFilesCount * 2) + 2
-
-    // Show a fancy progress bar
-    data.progress = progressBar
-    data.progress.start(totalWork, 0)
-
-    // Generate each of the individual mods after the destination folder + base mod
+    // Clear/create destination folder
     if (data.clear) {
-        await fs.promises.rmdir(data.destination, { recursive: true })
+        await progressLogger(fs.promises.rmdir(data.destination, { recursive: true }), 'Delete old output directory')
     }
-    await fs.promises.mkdir(data.destination, { recursive: true })
-    data.progress.increment()
-    for (let index = 1; index <= modCount; index++) {
-        await generateMod(data, sourceFiles, index)
-    }
+    await progressLogger(fs.promises.mkdir(data.destination, { recursive: true }), 'Create output directory')
 
-    // Create base mod once we've added all the music files
+    // Generate the mods, then grab their music files and create the base mod with them
+    await progressLogger(Promise.all(Array(modCount).fill().map((_, index) => generateMod(data, sourceFiles, index + 1))), `Generate music pack mods`)
     const destMusicFiles = await getDestFiles(data)
-    await generateMod(data, destMusicFiles)
+    await progressLogger(generateMod(data, destMusicFiles), 'Generate base mod')
 
     // Finally, do another pass around to zip the folders and delete the files
-    await zipMods(data, zipWork)
+    await zipMods(data)
 }
 
 module.exports = {

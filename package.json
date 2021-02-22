@@ -11,7 +11,7 @@
     "adm-zip": "^0.5.3",
     "arg": "^5.0.0",
     "canvas": "^2.6.1",
-    "cli-progress": "^3.9.0",
-    "json2lua": "^0.3.3"
+    "json2lua": "^0.3.3",
+    "progress-estimator": "^0.3.0"
   }
 }

@@ -1,4 +1,5 @@
 const path = require('path')
+const createLogger = require('progress-estimator')
 
 // Usage text, for use with help text
 const pathOfApp = path.basename(process.argv.slice(1)[0])
@@ -29,5 +30,6 @@ const logHelpMessage = (allArgs) => {
 
 module.exports = {
     logError,
-    logHelpMessage
+    logHelpMessage,
+    progressLogger: createLogger(),
 }
