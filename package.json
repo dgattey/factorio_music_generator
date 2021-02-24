@@ -79,7 +79,7 @@
   "scripts": {
     "generate": "node index",
     "semantic-release": "semantic-release",
-    "lint": "eslint 'src/**/*.js' --fix",
+    "lint": "eslint 'source/**/*.js' --fix",
     "format": "prettier --write \"**/*.{js,json,md,yml}\" \"*.{js,json,md,yml}\" \"!node_modules/**/*\"",
     "postinstall": "husky install"
   },
