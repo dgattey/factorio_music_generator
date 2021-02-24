@@ -1,4 +1,3 @@
-const path = require('path')
 const createLogger = require('progress-estimator')
 const { flagUsageDescriptions } = require('./args')
 
@@ -10,11 +9,8 @@ const error = (message) => {
 
 // Prints a help message using the base usage + formatted flag descriptions from args
 const help = () => {
-  const pathOfApp = path.basename(process.argv.slice(1)[0])
-  const baseUsageText = `Usage: ${process.argv0} ${pathOfApp} [options] [flags]
-
-    Options:`
-  console.log(`\n${baseUsageText}\n\n${flagUsageDescriptions().join('\n')}\n`)
+  const usageText = `Usage: yarn generate [options] [flags]\n\nOptions:`
+  console.log(`\n${usageText}\n\n${flagUsageDescriptions().join('\n')}\n`)
 }
 
 // Prints some info to the console
