@@ -1,6 +1,6 @@
 {
   "name": "factorio_ambience_generator",
-  "version": "1.0.0",
+  "version": "0.0.0-development",
   "description": "A music generator for Factorio. Creates a bunch of mods, dynamically, from a source folder of ogg files and a few command line args.",
   "main": "index.js",
   "repository": "https://github.com/dgattey/factorio_ambience_generator",
