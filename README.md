@@ -1,3 +1,9 @@
+[![GitHub release](https://img.shields.io/github/v/release/dgattey/factorio_ambience_generator.svg)](https://gitHub.com/dgattey/factorio_ambience_generator/releases/)
+[![Dependencies](https://david-dm.org/dgattey/factorio_ambience_generator.svg)](https://david-dm.org/dgattey/factorio_ambience_generator)
+[![Dev Dependencies](https://status.david-dm.org/gh/dgattey/factorio_ambience_generator.svg?type=dev)](https://david-dm.org/dgattey/factorio_ambience_generator?type=dev)
+[![Known Vulnerabilities](https://snyk.io/test/github/dgattey/factorio_ambience_generator/badge.svg?targetFile=package.json)](https://snyk.io/test/github/dgattey/factorio_ambience_generator?targetFile=package.json)
+[![GitHub license](https://img.shields.io/github/license/dgattey/factorio_ambience_generator.svg)](https://github.com/dgattey/factorio_ambience_generator/blob/main/LICENSE)
+
 # Factorio Ambience Generator
 
 A music generator for Factorio. Creates a bunch of mods, dynamically, from a
@@ -9,10 +15,10 @@ for anyone looking to create some mods for themselves.
 
 ## :sparkles: Usage
 
-**Quick usage:**
+**Quick usage (after `yarn install`):**
 
 ```commandline
-node index -f 1.1 -n 'Name of Mod'
+yarn generate -f 1.1 -n 'Name of Mod'
 ```
 
 At minimum, it needs a Factorio version to target, and the name to use for the
@@ -21,7 +27,7 @@ output to your heart's desire. Here's the full list of args, always accessible
 with the `-h` flag.
 
 ```commandline
-Usage: node index [options] [flags]
+Usage: yarn generate [options] [flags]
 
 Options:
 
@@ -43,7 +49,7 @@ Options:
 If you're developing locally, the command to use is:
 
 ```
-node index -f 1.1 -n 'Mod Name' -d '~/Library/Application Support/factorio/mods' --author 'Your Name' --contact 'your@email.com'
+yarn generate -f 1.1 -n 'Mod Name' -d '~/Library/Application Support/factorio/mods' --author 'Your Name' --contact 'your@email.com'
 ```
 
 This will build the mods directly into the mod folder on a Mac, no copying later
@@ -70,3 +76,6 @@ requirements, and cli-progress allows easy understanding of the ~ minute long
 process with 200 files). The files are split up in the `source` folder for a bit
 better organization (though it could use some work). Feel free to use it, take
 it, change it, and let's have fun playing Factorio with more music!
+
+This project uses Commitlint, Prettier, ESLint, Husky, and semantic-release to
+handle all the formatting, linting, and releases! Proudly open source.
