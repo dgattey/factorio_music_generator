@@ -21,6 +21,8 @@ for anyone looking to create some mods for themselves.
 yarn generate -f 1.1 -n 'Name of Mod'
 ```
 
+![Commandline output](https://user-images.githubusercontent.com/982182/108961872-cfb02c00-762c-11eb-823e-ced31e216382.png)
+
 At minimum, it needs a Factorio version to target, and the name to use for the
 mod itself. Optionally, there's a ton more you can provide to customize the
 output to your heart's desire. Here's the full list of args, always accessible
@@ -44,7 +46,7 @@ Options:
     --clear                             ALL DESTINATION FOLDER CONTENTS WILL BE DELETED. NO CONFIRMATION.
 ```
 
-### Best usage
+### :house_with_garden: Local usage
 
 If you're developing locally, the command to use is:
 
@@ -59,7 +61,7 @@ which type of file it's looking for. `-c` allows for packaging smaller or larger
 groups of files into one mod. For local use, you can provide a huge number to
 have it compressed into one mod.
 
-### Mod Portal
+### :space_invader: Mod Portal
 
 It'll create a set of mods like this, split up for easier uploading/downloading
 if you decide to submit it to the Factorio Mod Portal. There will be one main
@@ -70,12 +72,13 @@ thumbnail image!
 
 ## :hammer: Behind the scenes
 
-It's a `yarn` project, with decently minimal dependencies (Vercel's arg parser,
-a JSON -> Lua converter, canvas, and the excellent ADM Zip are the real
-requirements, and cli-progress allows easy understanding of the ~ minute long
-process with 200 files). The files are split up in the `source` folder for a bit
-better organization (though it could use some work). Feel free to use it, take
-it, change it, and let's have fun playing Factorio with more music!
+It's a `yarn` project, with decently minimal dependencies (Vercel's `arg`
+parser, a JSON -> Lua converter, `canvas`, and the excellent ADM Zip are the
+real requirements, and `progress-estimator` allows easy understanding of the ~
+minute long process with 200 files). The files are split up in the `source`
+folder for a bit better organization (though it could use some work). Feel free
+to use it, take it, change it, and let's have fun playing Factorio with more
+music!
 
 This project uses Commitlint, Prettier, ESLint, Husky, and semantic-release to
-handle all the formatting, linting, and releases! Proudly open source.
+handle all the formatting, linting, and releases. Proudly open source.
